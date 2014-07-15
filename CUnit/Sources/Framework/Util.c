@@ -251,6 +251,73 @@ size_t CU_number_width(int number)
 	return (strlen(buf));
 }
 
+CU_BOOL CU_check_for_single_runs(void)
+{
+    CU_pTestRegistry old_reg;
+    CU_pSuite current_suite, active_suite;
+    CU_pTest current_test;
+    unsigned int i, j;
+    CU_BOOL singleRunsFound = CU_TRUE;
+
+    /* create a new registry and save our old one */
+    old_reg = CU_set_registry(CU_create_new_registry());
+
+    /* go through all suites and tests in the old registry looking for the marker */
+    current_suite = old_reg->pSuite;
+    for (i = 0; i < old_reg->uiNumberOfSuites; i++)
+    {
+        active_suite = NULL;
+        /* see if the current suite has the marker */
+        if (strstr(current_suite->pName, "[x]") == NULL)
+        {
+            /* marker was not found so move through the tests */
+            current_test = current_suite->pTest;
+            for (j = 0; j < current_suite->uiNumberOfTests; j++)
+            {
+                /* see if the current test has the marker */
+                if (strstr(current_test->pName, "[x]") != NULL)
+                {
+                    /* add the current suite if required */
+                    if (active_suite == NULL)
+                    {
+                        active_suite = CU_add_suite(current_suite->pName, current_suite->pInitializeFunc, current_suite->pCleanupFunc);
+                    }
+                    /* now add the current test to the active suite */
+                    CU_add_test(active_suite, current_test->pName, current_test->pTestFunc);
+                }
+                /* go to the next test */
+                current_test = current_test->pNext;
+            }
+        }
+        else
+        {
+            /* marker was found so add the entire current suite */
+            active_suite = CU_add_suite(current_suite->pName, current_suite->pInitializeFunc, current_suite->pCleanupFunc);
+            current_test = current_suite->pTest;
+            for (j = 0; j < current_suite->uiNumberOfTests; j++)
+            {
+                /* add the current test to the active suite */
+                CU_add_test(active_suite, current_test->pName, current_test->pTestFunc);
+                /* go to the next test */
+                current_test = current_test->pNext;
+            }
+        }
+        /* go to the next suite */
+        current_suite = current_suite->pNext;
+    }
+
+    /* if no single runs were found then restore the old registery */
+    if (CU_get_registry()->uiNumberOfSuites == 0)
+    {
+        old_reg = CU_set_registry(old_reg);
+        singleRunsFound = CU_FALSE;
+    }
+    /* destroy the old registry */
+    CU_destroy_existing_registry(&old_reg);
+
+    return singleRunsFound;
+}
+
 /** @} */
 
 #ifdef CUNIT_BUILD_TESTS

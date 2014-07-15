@@ -129,6 +129,12 @@ CU_EXPORT size_t CU_number_width(int number);
  *  number in decimal.
  */
 
+CU_BOOL CU_check_for_single_runs(void);
+/**<
+ *  Checks for single test runs indicated by a special sequence of characters
+ *  in the suite and test descriptions.
+ */
+
 #ifdef CUNIT_BUILD_TESTS
 void test_cunit_Util(void);
 #endif
